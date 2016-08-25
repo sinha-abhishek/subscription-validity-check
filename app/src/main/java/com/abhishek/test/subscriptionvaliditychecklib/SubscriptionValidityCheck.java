@@ -47,8 +47,11 @@ public class SubscriptionValidityCheck {
     }
 
     public void refreshServerTime(long serverTimeStamp) {
+        long curServerTime = getServerTime();
+        if (curServerTime < serverTimeStamp) {
             setServerTime(serverTimeStamp);
             setState(STATE_ALLRIGHT);
+        }
     }
 
     private long getServerTime() {
