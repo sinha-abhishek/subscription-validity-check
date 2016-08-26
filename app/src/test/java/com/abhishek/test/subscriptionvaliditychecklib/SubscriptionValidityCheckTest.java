@@ -22,6 +22,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -182,5 +183,198 @@ public class SubscriptionValidityCheckTest {
         Mockito.verify(preferenceUtil, times(0)).savePreference(eq(PreferenceUtil.PREF_TYPE_LONG), eq("local_time"), anyLong());
 
     }
+
+//    @Test
+//    public void testRefreshSubscriptionValues() throws Exception {
+//        SubscriptionValidityCheck spy = spy(subscriptionValidityCheck);
+//        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+//        String product = "xyz";
+//        long start = new Date().getTime() - 86400*1000*2; //current -2 days
+//        long server = new Date().getTime() - 2000; //current - 2sec
+//        long end = new Date().getTime() + 86400*1000*2; // current + 2 days;
+//        Mockito.when(spy.startSubscription(product, start, end, server)).thenReturn(true);
+//        spy.refreshSubscriptionValues(product, start, end, server);
+//        Mockito.verify(spy, times(1)).startSubscription(product, start, end, server);
+//    }
+
+    @Test
+    public void testSubscriptionValidForValid() throws Exception {
+        String product = "xyz";
+        long start = new Date().getTime() - 86400*1000*2; //current -2 days
+        long server = new Date().getTime() - 2000; //current - 2sec
+        long end = new Date().getTime() + 2000; // current + 2 sec;
+        long curLocal = new Date().getTime();
+
+        int state = SubscriptionValidityCheck.STATE_ALLRIGHT;
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "server_time")).thenReturn(server);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "local_time")).thenReturn(new Date().getTime());
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_INTEGER, "state_key")).thenReturn(state);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_start_time")).thenReturn(start);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_end_time")).thenReturn(end);
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        //boolean val = subscriptionValidityCheck.startSubscription(product, start, end, server);
+        boolean result = subscriptionValidityCheck.isSubscriptionValid(product);
+        Assert.assertEquals(true, result);
+//        Thread.sleep(3000);
+//        boolean result2 = subscriptionValidityCheck.isSubscriptionValid(product);
+//        Assert.assertEquals(false, result2);
+    }
+
+    @Test
+    public void testSubscriptionValidForExpired() throws Exception {
+        String product = "xyz";
+        long start = new Date().getTime() - 86400*1000*2; //current -2 days
+        long server = new Date().getTime() - 2000; //current - 2sec
+        long end = new Date().getTime() + 2000; // current + 2 sec;
+        long curLocal = new Date().getTime() + 3000;
+
+        int state = SubscriptionValidityCheck.STATE_ALLRIGHT;
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "server_time")).thenReturn(server);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "local_time")).thenReturn(curLocal);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_INTEGER, "state_key")).thenReturn(state);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_start_time")).thenReturn(start);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_end_time")).thenReturn(end);
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        //boolean val = subscriptionValidityCheck.startSubscription(product, start, end, server);
+        boolean result = subscriptionValidityCheck.isSubscriptionValid(product);
+        Assert.assertEquals(false, result);
+
+    }
+
+    @Test
+    public void testSubscriptionValidForLocalBeforeStart() throws Exception {
+        String product = "xyz";
+        long start = new Date().getTime() - 86400*1000*2; //current -2 days
+        long server = new Date().getTime() - 2000; //current - 2sec
+        long end = new Date().getTime() + 2000; // current + 2 sec;
+        long curLocal = start - 3000;
+
+        int state = SubscriptionValidityCheck.STATE_ALLRIGHT;
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "server_time")).thenReturn(server);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "local_time")).thenReturn(curLocal);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_INTEGER, "state_key")).thenReturn(state);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_start_time")).thenReturn(start);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_end_time")).thenReturn(end);
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        //boolean val = subscriptionValidityCheck.startSubscription(product, start, end, server);
+        boolean result = subscriptionValidityCheck.isSubscriptionValid(product);
+        Assert.assertEquals(true, result);
+
+    }
+
+    @Test
+    public void testSubscriptionValidForInvalidServerBeforeStart() throws Exception {
+        String product = "xyz";
+        long start = new Date().getTime() - 86400*1000*2; //current -2 days
+        long server = new Date().getTime() - 2000; //current - 2sec
+        long end = new Date().getTime() + 2000; // current + 2 sec;
+        long curLocal = end + 2000;
+
+        int state = SubscriptionValidityCheck.STATE_ALLRIGHT;
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "server_time")).thenReturn(server);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "local_time")).thenReturn(curLocal);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_INTEGER, "state_key")).thenReturn(state);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_start_time")).thenReturn(start);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_end_time")).thenReturn(end);
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        //boolean val = subscriptionValidityCheck.startSubscription(product, start, end, server);
+        boolean result = subscriptionValidityCheck.isSubscriptionValid(product);
+        Assert.assertEquals(false, result);
+
+    }
+
+    @Test
+    public void testSubscriptionValidForServerBeforeStart() throws Exception {
+        String product = "xyz";
+        long start = new Date().getTime() - 86400*1000*2; //current -2 days
+        long server = start - 2000; //current - 2sec
+        long end = new Date().getTime() + 2000; // current + 2 sec;
+        long curLocal = new Date().getTime();
+
+        int state = SubscriptionValidityCheck.STATE_ALLRIGHT;
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "server_time")).thenReturn(server);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "local_time")).thenReturn(curLocal);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_INTEGER, "state_key")).thenReturn(state);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_start_time")).thenReturn(start);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_end_time")).thenReturn(end);
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        //boolean val = subscriptionValidityCheck.startSubscription(product, start, end, server);
+        boolean result = subscriptionValidityCheck.isSubscriptionValid(product);
+        Assert.assertEquals(true, result);
+
+    }
+
+    @Test
+    public void testSubscriptionValidForInvalidState() throws Exception {
+        String product = "xyz";
+        long start = new Date().getTime() - 86400*1000*2; //current -2 days
+        long server = new Date().getTime() - 2000; //current - 2sec
+        long end = new Date().getTime() + 2000; // current + 2 sec;
+        long curLocal = start - 3000;
+
+        int state = SubscriptionValidityCheck.STATE_SERVERSYNCNEEDED;
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "server_time")).thenReturn(server);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "local_time")).thenReturn(curLocal);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_INTEGER, "state_key")).thenReturn(state);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_start_time")).thenReturn(start);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_end_time")).thenReturn(end);
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        //boolean val = subscriptionValidityCheck.startSubscription(product, start, end, server);
+        boolean result = subscriptionValidityCheck.isSubscriptionValid(product);
+        Assert.assertEquals(false, result);
+
+    }
+
+    @Test
+    public void testSubscriptionValidForInvalidState2() throws Exception {
+        String product = "xyz";
+        long start = new Date().getTime() - 86400*1000*2; //current -2 days
+        long server = new Date().getTime() - 2000; //current - 2sec
+        long end = new Date().getTime() + 2000; // current + 2 sec;
+        long curLocal = start - 3000;
+
+        int state = SubscriptionValidityCheck.STATE_TIMECORRUPTED;
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "server_time")).thenReturn(server);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "local_time")).thenReturn(curLocal);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_INTEGER, "state_key")).thenReturn(state);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_start_time")).thenReturn(start);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_end_time")).thenReturn(end);
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        //boolean val = subscriptionValidityCheck.startSubscription(product, start, end, server);
+        boolean result = subscriptionValidityCheck.isSubscriptionValid(product);
+        Assert.assertEquals(false, result);
+
+    }
+
+    @Test
+    public void testSubscriptionValidServerInvalid() throws Exception {
+        String product = "xyz";
+        long start = new Date().getTime() - 86400*1000*2; //current -2 days
+        long server = 0; //current - 2sec
+        long end = new Date().getTime() + 2000; // current + 2 sec;
+        long curLocal = new Date().getTime();
+
+        int state = SubscriptionValidityCheck.STATE_ALLRIGHT;
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "server_time")).thenReturn(server);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "local_time")).thenReturn(curLocal);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_INTEGER, "state_key")).thenReturn(state);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_start_time")).thenReturn(start);
+        Mockito.when(preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, "xyz_end_time")).thenReturn(end);
+        Mockito.doNothing().when(preferenceUtil).savePreference(anyInt(), anyString(), anyObject());
+        //boolean val = subscriptionValidityCheck.startSubscription(product, start, end, server);
+        boolean result = subscriptionValidityCheck.isSubscriptionValid(product);
+        Assert.assertEquals(false, result);
+
+    }
+
+
 
 }
