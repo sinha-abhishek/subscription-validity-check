@@ -2,6 +2,11 @@ package com.abhishek.test.subscriptionvaliditychecklib;
 
 import android.content.Context;
 
+import com.abhishek.test.subscriptionvaliditychecklib.encrypters.ConcealEncrypter;
+import com.abhishek.test.subscriptionvaliditychecklib.encrypters.Encrypter;
+import com.abhishek.test.subscriptionvaliditychecklib.keymanagers.KeyManager;
+import com.abhishek.test.subscriptionvaliditychecklib.keymanagers.SimpleKeyManager;
+
 import java.util.Date;
 
 public class SubscriptionValidityCheck {
@@ -18,9 +23,20 @@ public class SubscriptionValidityCheck {
     public static int STATE_TIMECORRUPTED = 1;
     public static int STATE_SERVERSYNCNEEDED = 2;
 
+    //TODO: move these to so or buildconfig
+    public static String SALT_STRING = "saltstring";
+
+    private KeyManager keyManager;
+    private Encrypter encrypter;
+
     public SubscriptionValidityCheck(Context context) {
         _context = context;
         preferenceUtil = new PreferenceUtil(context);
+        //TODO: make these factory based
+        keyManager = new SimpleKeyManager();
+        keyManager.initializeKey(context);
+        encrypter = new ConcealEncrypter(context, keyManager, SALT_STRING);
+
     }
 
     public void setPreferenceUtil(PreferenceUtil preferenceUtil) {
@@ -93,10 +109,7 @@ public class SubscriptionValidityCheck {
         }
         long serverTime = getServerTime();
         long lastSavedLocalTime = getLocalTime();
-        if (currentTimeStamp < serverTime || currentTimeStamp < lastSavedLocalTime) {
-            return true;
-        }
-        return false;
+        return currentTimeStamp < serverTime || currentTimeStamp < lastSavedLocalTime;
     }
 
     public void refreshLocalTime() {
@@ -126,11 +139,8 @@ public class SubscriptionValidityCheck {
         long endTime = getEndTime(product);
         long startTime = getStartTime(product);
         long timeToCompare = serverTime > lastSavedLocalTime ? serverTime : lastSavedLocalTime;
-        if (timeToCompare >= startTime &&
-               timeToCompare <= endTime) {
-            return true;
-        }
-        return false;
+        return timeToCompare >= startTime &&
+                timeToCompare <= endTime;
     }
 
     public int getState() {
