@@ -6,7 +6,10 @@ import com.abhishek.test.subscriptionvaliditychecklib.encrypters.ConcealEncrypte
 import com.abhishek.test.subscriptionvaliditychecklib.encrypters.Encrypter;
 import com.abhishek.test.subscriptionvaliditychecklib.keymanagers.KeyManager;
 import com.abhishek.test.subscriptionvaliditychecklib.keymanagers.SimpleKeyManager;
+import com.facebook.crypto.exception.CryptoInitializationException;
+import com.facebook.crypto.exception.KeyChainException;
 
+import java.io.IOException;
 import java.util.Date;
 
 public class SubscriptionValidityCheck {
@@ -70,36 +73,69 @@ public class SubscriptionValidityCheck {
         }
     }
 
+    public void encryptAndSaveTimeStamp(String pref_key, long time) {
+        String value = String.valueOf(time);
+        encryptAndSave(pref_key, value);
+    }
+
+    public long getTimeStamp (String pref_key) {
+        String plainText = getDecryptedValue(pref_key);
+        long value = Long.parseLong(plainText);
+        return value;
+    }
+
+    public void encryptAndSave(String prefKey, String plainText) {
+        try {
+            String cipher = encrypter.getEncryptedString(plainText);
+            preferenceUtil.savePreference(PreferenceUtil.PREF_TYPE_STRING, prefKey, cipher);
+        } catch (IOException | KeyChainException | CryptoInitializationException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String getDecryptedValue(String prefKey) {
+        String plainText = null;
+        String cipher = (String) preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_STRING, prefKey);
+        long value = 0;
+        try {
+            plainText = encrypter.getDecryptedString(cipher);
+            return plainText;
+        } catch (IOException | KeyChainException | CryptoInitializationException | NumberFormatException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     private long getServerTime() {
-        return (long)preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, SERVER_TIME);
+        return getTimeStamp(SERVER_TIME);
     }
 
     private long getLocalTime() {
-        return (long) preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, LOCAL_TIME);
+        return getTimeStamp(LOCAL_TIME);
     }
 
     private void setServerTime(long serverTimeStamp) {
-        preferenceUtil.savePreference(PreferenceUtil.PREF_TYPE_LONG, SERVER_TIME, serverTimeStamp);
+        encryptAndSaveTimeStamp(SERVER_TIME, serverTimeStamp);
     }
 
     private void setLocalTime(long localTime) {
-        preferenceUtil.savePreference(PreferenceUtil.PREF_TYPE_LONG, LOCAL_TIME, localTime);
+        encryptAndSaveTimeStamp(LOCAL_TIME, localTime);
     }
 
     private long getEndTime(String product) {
-        return (long)preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, getEndTimeKey(product));
+        return getTimeStamp(getEndTimeKey(product));
     }
 
     private void setEndTime(String product, long timestamp) {
-        preferenceUtil.savePreference(PreferenceUtil.PREF_TYPE_LONG, getEndTimeKey(product), timestamp);
+        encryptAndSaveTimeStamp(getEndTimeKey(product), timestamp);
     }
 
     private long getStartTime(String product) {
-        return (long)preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_LONG, getStartTimeKey(product));
+        return getTimeStamp(getStartTimeKey(product));
     }
 
     private void setStartTime(String product, long timestamp) {
-        preferenceUtil.savePreference(PreferenceUtil.PREF_TYPE_LONG, getStartTimeKey(product), timestamp);
+        encryptAndSaveTimeStamp(getStartTimeKey(product), timestamp);
     }
 
     private boolean detectDiscrepancy(long currentTimeStamp) {
@@ -144,11 +180,13 @@ public class SubscriptionValidityCheck {
     }
 
     public int getState() {
-        return (int)preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_INTEGER, PREF_STATE_KEY);
+        return (int) getTimeStamp(PREF_STATE_KEY);
+        //return (int)preferenceUtil.getPreference(PreferenceUtil.PREF_TYPE_INTEGER, PREF_STATE_KEY);
     }
 
     public void setState(int state) {
-        preferenceUtil.savePreference(PreferenceUtil.PREF_TYPE_INTEGER, PREF_STATE_KEY, state);
+        encryptAndSaveTimeStamp(PREF_STATE_KEY, (long) state);
+        //preferenceUtil.savePreference(PreferenceUtil.PREF_TYPE_INTEGER, PREF_STATE_KEY, state);
     }
 
     protected String getEndTimeKey(String product) {
