@@ -35,11 +35,14 @@ public class SubscriptionValidityCheck {
     public SubscriptionValidityCheck(Context context) {
         _context = context;
         preferenceUtil = new PreferenceUtil(context);
+        initEncrypters();
+    }
+
+    public void initEncrypters() {
         //TODO: make these factory based
         keyManager = new SimpleKeyManager();
-        keyManager.initializeKey(context);
-        encrypter = new ConcealEncrypter(context, keyManager, SALT_STRING);
-
+        keyManager.initializeKey(_context);
+        encrypter = new ConcealEncrypter(_context, keyManager, SALT_STRING);
     }
 
     public void setPreferenceUtil(PreferenceUtil preferenceUtil) {
